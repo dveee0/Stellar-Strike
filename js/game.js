@@ -78,6 +78,10 @@ class GameEngine {
     // Multiplayer System
     this.multiplayer = window.multiplayerClient;
     this.isMultiplayer = false;
+
+    // Mobile / Touch Device Detection
+    this.isMobile = false;
+    this.mobileInput = null;
     this.remotePlayer = null;
 
     if (this.skillManager) {
@@ -149,6 +153,270 @@ class GameEngine {
       this.sound.init();
       this.sound.resume();
     }, { once: true });
+
+    // Mobile / Touch Device Detection & Init
+    this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (this.isMobile) this.initMobileControls();
+  }
+
+  // ==========================================
+  // MOBILE TOUCH CONTROLS
+  // ==========================================
+
+  initMobileControls() {
+    document.body.classList.add('mobile-active');
+
+    const commandBar = document.getElementById('mobileCommandBar');
+    this.mobileInput = document.getElementById('mobileTypingInput');
+    const focusBtn = document.getElementById('mobileFocusBtn');
+    const backspaceBtn = document.getElementById('mobileBackspaceBtn');
+    const empBtn = document.getElementById('mobileEmpBtn');
+    const enterBtn = document.getElementById('mobileEnterBtn');
+
+    if (!this.mobileInput) return;
+
+    // Prevent zoom on double-tap
+    document.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+
+    // Mobile typing: use 'input' event instead of 'keydown' for virtual keyboard
+    this.mobileInput.addEventListener('input', (e) => {
+      if (this.state !== this.STATE_PLAYING) return;
+
+      const val = this.mobileInput.value;
+      if (val.length > 0) {
+        // Process the last typed character
+        const lastChar = val.charAt(val.length - 1).toUpperCase();
+        if (lastChar.length === 1) {
+          this.processTypedChar(lastChar);
+        }
+        // Clear input after processing
+        this.mobileInput.value = '';
+      }
+    });
+
+    // Detect backspace on mobile via beforeinput
+    this.mobileInput.addEventListener('beforeinput', (e) => {
+      if (this.state !== this.STATE_PLAYING) return;
+      if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') {
+        e.preventDefault();
+        // Release locked target (same as Backspace key)
+        if (this.lockedTarget) {
+          this.lockedTarget.isLocked = false;
+          this.lockedTarget = null;
+          this.addFloatingText(this.player.x, this.player.y - 45, "LOCK RELEASED", "#ffaa00", 14, 0.8);
+          this.updateMobileTargetPreview();
+        }
+      }
+    });
+
+    // Prevent form submission on Enter in mobile input
+    this.mobileInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+      }
+    });
+
+    // Keyboard toggle button
+    if (focusBtn) {
+      focusBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (document.activeElement === this.mobileInput) {
+          this.mobileInput.blur();
+        } else {
+          this.mobileInput.focus();
+        }
+      });
+    }
+
+    // Backspace / Release Lock button
+    if (backspaceBtn) {
+      backspaceBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.state !== this.STATE_PLAYING) return;
+        if (this.lockedTarget) {
+          this.lockedTarget.isLocked = false;
+          this.lockedTarget = null;
+          this.addFloatingText(this.player.x, this.player.y - 45, "LOCK RELEASED", "#ffaa00", 14, 0.8);
+          this.updateMobileTargetPreview();
+        }
+      });
+    }
+
+    // EMP Shockwave button
+    if (empBtn) {
+      empBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.state !== this.STATE_PLAYING) return;
+        this.triggerEmpBlast();
+      });
+    }
+
+    // Enter / Submit button — acts as EMP or confirm
+    if (enterBtn) {
+      enterBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.state !== this.STATE_PLAYING) return;
+        // If no locked target, trigger EMP. If locked, does nothing (typing completes word).
+        if (!this.lockedTarget) {
+          this.triggerEmpBlast();
+        }
+      });
+    }
+
+    // Track virtual keyboard visibility via visualViewport API
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        const viewportHeight = window.visualViewport.height;
+        const windowHeight = window.innerHeight;
+        if (viewportHeight < windowHeight * 0.75) {
+          document.body.classList.add('keyboard-open');
+        } else {
+          document.body.classList.remove('keyboard-open');
+        }
+      });
+    }
+
+    // Update target preview periodically
+    this._mobilePreviewInterval = setInterval(() => {
+      if (this.state === this.STATE_PLAYING) {
+        this.updateMobileTargetPreview();
+      }
+    }, 200);
+  }
+
+  /** Process a single typed character — shared by desktop keydown and mobile input */
+  processTypedChar(key) {
+    // PRIORITY 1: MISSILE COUNTER-TYPING
+    const hitMissileIndex = this.missiles.findIndex(m => m.interceptChar === key);
+    if (hitMissileIndex !== -1) {
+      const missile = this.missiles[hitMissileIndex];
+      this.missiles.splice(hitMissileIndex, 1);
+
+      this.sound.playInterception();
+      this.createExplosion(missile.x, missile.y, "#ff0055", false);
+      this.addFloatingText(missile.x, missile.y - 10, "INTERCEPTED! +120", "#00ff88", 16, 1.0);
+
+      this.score += 120 * this.getMultiplier();
+      this.incrementCombo();
+      this.player.addEmp(10);
+      this.totalCorrectChars++;
+      this.updateHUD();
+      this.updateSkillHUD();
+      if (this.isMobile) this.updateMobileTargetPreview();
+      return;
+    }
+
+    // PRIORITY 2: LOCKED TARGET PROGRESSION
+    if (this.lockedTarget) {
+      const target = this.lockedTarget;
+      const targetWord = target.word || target.bossPhrase;
+      const expectedChar = targetWord.charAt(target.typedIndex);
+
+      if (key === expectedChar) {
+        target.typedIndex++;
+        this.totalCorrectChars++;
+        this.player.addEmp(3);
+
+        while (target.typedIndex < targetWord.length && targetWord.charAt(target.typedIndex) === ' ') {
+          target.typedIndex++;
+        }
+
+        this.fireLaserAtTarget(target);
+        this.sound.playLaser(this.player.alternateFire);
+        this.sound.playCombo(this.combo);
+        this.incrementCombo();
+
+        if (target.typedIndex >= targetWord.length) {
+          this.handleTargetDestroyed(target);
+          this.lockedTarget = null;
+        }
+      } else {
+        this.handleTypo();
+      }
+      this.updateHUD();
+      if (this.isMobile) this.updateMobileTargetPreview();
+      return;
+    }
+
+    // PRIORITY 3: ACQUIRE NEW TARGET LOCK
+    let candidate = null;
+    let closestDist = Infinity;
+
+    if (this.boss && !this.boss.isDead) {
+      if (this.boss.shieldActive) {
+        for (const turret of this.boss.turrets) {
+          if (!turret.isDead && turret.word.charAt(0) === key) {
+            candidate = turret;
+            break;
+          }
+        }
+      } else {
+        if (this.boss.bossPhrase.charAt(0) === key) {
+          candidate = this.boss;
+        }
+      }
+    }
+
+    if (!candidate) {
+      for (const enemy of this.enemies) {
+        if (!enemy.isDead && enemy.word.charAt(0) === key) {
+          const dist = Math.hypot(enemy.x - this.player.x, enemy.y - this.player.y);
+          if (dist < closestDist) {
+            closestDist = dist;
+            candidate = enemy;
+          }
+        }
+      }
+    }
+
+    if (candidate) {
+      this.lockedTarget = candidate;
+      candidate.isLocked = true;
+      candidate.typedIndex = 1;
+      const candWord = candidate.word || candidate.bossPhrase;
+      while (candidate.typedIndex < candWord.length && candWord.charAt(candidate.typedIndex) === ' ') {
+        candidate.typedIndex++;
+      }
+      this.totalCorrectChars++;
+      this.player.addEmp(3);
+
+      this.fireLaserAtTarget(candidate);
+      this.sound.playLaser(false);
+      this.sound.playCombo(this.combo);
+      this.incrementCombo();
+
+      const w = candidate.word || candidate.bossPhrase;
+      if (candidate.typedIndex >= w.length) {
+        this.handleTargetDestroyed(candidate);
+        this.lockedTarget = null;
+      }
+    } else {
+      this.handleTypo();
+    }
+
+    this.updateHUD();
+    if (this.isMobile) this.updateMobileTargetPreview();
+  }
+
+  /** Update the mobile target preview bar with current locked target info */
+  updateMobileTargetPreview() {
+    const targetText = document.getElementById('mobileTargetText');
+    if (!targetText) return;
+
+    if (!this.lockedTarget) {
+      targetText.innerHTML = 'SIAP TEMPUR - KETIK HURUF TARGET';
+      return;
+    }
+
+    const target = this.lockedTarget;
+    const word = target.word || target.bossPhrase;
+    const typed = word.substring(0, target.typedIndex);
+    const remaining = word.substring(target.typedIndex);
+
+    targetText.innerHTML =
+      `<span class="typed-char">${typed}</span><span class="remaining-char">${remaining}</span>`;
   }
 
   loadHighScores() {
@@ -230,6 +498,12 @@ class GameEngine {
     document.getElementById("gameOverModal").classList.add("hidden");
     document.getElementById("pauseModal").classList.add("hidden");
     document.getElementById("multiplayerModal").classList.add("hidden");
+
+    // Auto-focus mobile input for virtual keyboard
+    if (this.isMobile && this.mobileInput) {
+      setTimeout(() => this.mobileInput.focus(), 300);
+      this.updateMobileTargetPreview();
+    }
   }
 
   initWave(waveNum) {
@@ -316,133 +590,8 @@ class GameEngine {
     const key = e.key.toUpperCase();
     if (key.length !== 1) return;
 
-    // ----------------------------------------------------
-    // PRIORITY 1: POINT-DEFENSE MISSILE COUNTER-TYPING!
-    // ----------------------------------------------------
-    // If an incoming missile matches the key, vaporize it immediately!
-    const hitMissileIndex = this.missiles.findIndex(m => m.interceptChar === key);
-    if (hitMissileIndex !== -1) {
-      const missile = this.missiles[hitMissileIndex];
-      this.missiles.splice(hitMissileIndex, 1);
-
-      this.sound.playInterception();
-      this.createExplosion(missile.x, missile.y, "#ff0055", false);
-      this.addFloatingText(missile.x, missile.y - 10, "INTERCEPTED! +120", "#00ff88", 16, 1.0);
-
-      this.score += 120 * this.getMultiplier();
-      this.incrementCombo();
-      this.player.addEmp(10);
-      this.totalCorrectChars++;
-      this.updateHUD();
-      this.updateSkillHUD();
-      return;
-    }
-
-    // ----------------------------------------------------
-    // PRIORITY 2: LOCKED TARGET PROGRESSION
-    // ----------------------------------------------------
-    if (this.lockedTarget) {
-      const target = this.lockedTarget;
-      const targetWord = target.word || target.bossPhrase;
-      const expectedChar = targetWord.charAt(target.typedIndex);
-
-      if (key === expectedChar) {
-        // Correct letter!
-        target.typedIndex++;
-        this.totalCorrectChars++;
-        this.player.addEmp(3);
-
-        // Auto-skip spaces in multi-word phrases so SPACE is reserved for EMP
-        while (target.typedIndex < targetWord.length && targetWord.charAt(target.typedIndex) === ' ') {
-          target.typedIndex++;
-        }
-
-        // Fire laser bolt
-        this.fireLaserAtTarget(target);
-        this.sound.playLaser(this.player.alternateFire);
-        this.sound.playCombo(this.combo);
-        this.incrementCombo();
-
-        // Check if word completed
-        if (target.typedIndex >= targetWord.length) {
-          this.handleTargetDestroyed(target);
-          this.lockedTarget = null;
-        }
-      } else {
-        // Typo!
-        this.handleTypo();
-      }
-      this.updateHUD();
-      return;
-    }
-
-    // ----------------------------------------------------
-    // PRIORITY 3: ACQUIRE NEW TARGET LOCK
-    // ----------------------------------------------------
-    // Find all enemies on screen whose next (first) letter matches the pressed key
-    let candidate = null;
-    let closestDist = Infinity;
-
-    // Check Boss Turrets / Core first if Boss is present
-    if (this.boss && !this.boss.isDead) {
-      if (this.boss.shieldActive) {
-        // Check Turrets
-        for (const turret of this.boss.turrets) {
-          if (!turret.isDead && turret.word.charAt(0) === key) {
-            candidate = turret;
-            break;
-          }
-        }
-      } else {
-        // Core is exposed
-        if (this.boss.bossPhrase.charAt(0) === key) {
-          candidate = this.boss;
-        }
-      }
-    }
-
-    // Check standard enemies
-    if (!candidate) {
-      for (const enemy of this.enemies) {
-        if (!enemy.isDead && enemy.word.charAt(0) === key) {
-          const dist = Math.hypot(enemy.x - this.player.x, enemy.y - this.player.y);
-          if (dist < closestDist) {
-            closestDist = dist;
-            candidate = enemy;
-          }
-        }
-      }
-    }
-
-    if (candidate) {
-      // Lock target and register first letter
-      this.lockedTarget = candidate;
-      candidate.isLocked = true;
-      candidate.typedIndex = 1;
-      const candWord = candidate.word || candidate.bossPhrase;
-      while (candidate.typedIndex < candWord.length && candWord.charAt(candidate.typedIndex) === ' ') {
-        candidate.typedIndex++;
-      }
-      this.totalCorrectChars++;
-      this.player.addEmp(3);
-
-      this.fireLaserAtTarget(candidate);
-      this.sound.playLaser(false);
-      this.sound.playCombo(this.combo);
-      this.incrementCombo();
-
-      // In case of a 1-letter word (rare/asteroid)
-      const w = candidate.word || candidate.bossPhrase;
-      if (candidate.typedIndex >= w.length) {
-        this.handleTargetDestroyed(candidate);
-        this.lockedTarget = null;
-      }
-    } else {
-      // Typed a letter that matches nothing on screen
-      this.handleTypo();
-    }
-
-    this.updateHUD();
+    // Delegate to shared char processor (used by both desktop & mobile)
+    this.processTypedChar(key);
   }
 
   fireLaserAtTarget(target) {
@@ -1442,18 +1591,27 @@ class GameEngine {
       }
 
       document.getElementById("gameOverModal").classList.remove("hidden");
+
+      // Blur mobile input on game over
+      if (this.isMobile && this.mobileInput) this.mobileInput.blur();
     }
   }
 
   pauseGame() {
     this.state = this.STATE_PAUSED;
     document.getElementById("pauseModal").classList.remove("hidden");
+    // Blur mobile input to hide virtual keyboard during pause
+    if (this.isMobile && this.mobileInput) this.mobileInput.blur();
   }
 
   resumeGame() {
     this.state = this.STATE_PLAYING;
     this.lastTime = performance.now();
     document.getElementById("pauseModal").classList.add("hidden");
+    // Re-focus mobile input for virtual keyboard
+    if (this.isMobile && this.mobileInput) {
+      setTimeout(() => this.mobileInput.focus(), 200);
+    }
   }
 
   setLanguage(lang) {

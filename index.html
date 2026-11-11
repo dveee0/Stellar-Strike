@@ -2,7 +2,10 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>STELLAR STRIKE: Cyber Typing Interceptor</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -177,6 +180,42 @@
         <div><span class="tactical-hint-key">[1-6]</span> SKILL KHUSUS</div>
         <div><span class="tactical-hint-key">[TAB]</span> LEADERBOARD</div>
         <div><span class="tactical-hint-key">[ESC]</span> JEDA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Touch Command Bar (Khusus Layar Sentuh / HP) -->
+  <div id="mobileCommandBar" class="mobile-command-bar">
+    <!-- Live Target Preview (Tepat di Atas Virtual Keyboard) -->
+    <div id="mobileTargetPreview" class="mobile-target-preview">
+      <span class="mobile-target-icon">🎯</span>
+      <span id="mobileTargetText" class="mobile-target-text">SIAP TEMPUR - KETIK HURUF TARGET</span>
+    </div>
+
+    <!-- Baris Input Virtual Keyboard & Tombol Aksi Sentuh -->
+    <div class="mobile-input-row">
+      <div class="mobile-input-box">
+        <input
+          id="mobileTypingInput"
+          type="text"
+          class="mobile-typing-input"
+          placeholder="KETIK DI SINI..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          inputmode="text"
+          enterkeyhint="go"
+          aria-label="Input Ketik Tempur"
+        />
+        <button id="mobileFocusBtn" class="mobile-kb-toggle-btn" title="Buka / Tutup Virtual Keyboard" type="button">⌨️</button>
+      </div>
+
+      <!-- Tombol Aksi Sentuh Cepat untuk HP -->
+      <div class="mobile-actions-group">
+        <button id="mobileBackspaceBtn" class="mobile-touch-btn btn-backspace" title="Batal Kunci / Backspace" type="button">⌫ GANTI</button>
+        <button id="mobileEmpBtn" class="mobile-touch-btn btn-emp" title="EMP Shockwave" type="button">💥 EMP</button>
+        <button id="mobileEnterBtn" class="mobile-touch-btn btn-submit" title="Kirim / Kunci Target" type="button">⏎ KIRIM</button>
       </div>
     </div>
   </div>

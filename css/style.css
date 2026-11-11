@@ -993,16 +993,408 @@ html, body {
   color: var(--neon-cyan);
 }
 
-/* Responsive Scaling */
+/* =============================================
+   MOBILE COMMAND BAR (Touch Controls for Smartphone)
+   ============================================= */
+
+.mobile-command-bar {
+  display: none; /* Hidden by default, shown via JS on touch devices */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 65;
+  background: linear-gradient(180deg, rgba(10, 10, 30, 0.95) 0%, rgba(5, 5, 20, 0.98) 100%);
+  border-top: 2px solid var(--neon-cyan);
+  box-shadow: 0 -4px 20px rgba(0, 255, 255, 0.15);
+  padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  flex-direction: column;
+  gap: 6px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body.mobile-active .mobile-command-bar {
+  display: flex;
+}
+
+.mobile-target-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(0, 255, 255, 0.06);
+  border: 1px solid rgba(0, 255, 255, 0.25);
+  border-radius: 6px;
+  min-height: 32px;
+}
+
+.mobile-target-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.mobile-target-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: var(--neon-cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.mobile-target-text .typed-char {
+  color: #00ff88;
+  text-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+}
+
+.mobile-target-text .remaining-char {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.mobile-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.mobile-input-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 4px;
+  position: relative;
+}
+
+.mobile-typing-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 16px;
+  padding: 10px 8px;
+  caret-color: var(--neon-cyan);
+  letter-spacing: 2px;
+  min-width: 0;
+}
+
+.mobile-typing-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 1px;
+  font-size: 12px;
+}
+
+.mobile-kb-toggle-btn {
+  background: rgba(0, 255, 255, 0.12);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  color: var(--neon-cyan);
+  font-size: 20px;
+  padding: 8px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-kb-toggle-btn:active {
+  background: rgba(0, 255, 255, 0.3);
+  transform: scale(0.95);
+}
+
+.mobile-actions-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mobile-touch-btn {
+  min-width: 60px;
+  min-height: 44px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mobile-touch-btn:active {
+  transform: scale(0.92);
+}
+
+.btn-backspace {
+  background: linear-gradient(135deg, #ff8800 0%, #cc6600 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(255, 136, 0, 0.3);
+}
+
+.btn-backspace:active {
+  background: linear-gradient(135deg, #ffaa33 0%, #ff8800 100%);
+}
+
+.btn-emp {
+  background: linear-gradient(135deg, #00ccff 0%, #0088cc 100%);
+  color: #000;
+  box-shadow: 0 2px 8px rgba(0, 204, 255, 0.3);
+}
+
+.btn-emp:active {
+  background: linear-gradient(135deg, #33ddff 0%, #00ccff 100%);
+}
+
+.btn-submit {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+  color: #000;
+  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+}
+
+.btn-submit:active {
+  background: linear-gradient(135deg, #33ffaa 0%, #00ff88 100%);
+}
+
+/* =============================================
+   RESPONSIVE: TABLET & MOBILE (768px)
+   ============================================= */
+
 @media (max-width: 768px) {
-  .game-title { font-size: 28px; }
-  .hud-panel { gap: 12px; padding: 6px 12px; }
-  .hud-val { font-size: 16px; }
-  .meter-group { width: 220px; }
-  .tactical-hints { display: none; }
+  .game-title { font-size: 22px; letter-spacing: 2px; }
+  .game-desc { display: none; }
+
+  .hud-top-bar {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 8px;
+  }
+
+  .hud-panel {
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  .hud-val { font-size: 14px; }
+  .hud-label { font-size: 8px; }
+
+  .hud-top-center {
+    order: 3;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  .hud-leaderboard-pill {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .hud-leaderboard-pill .hud-key-tag { display: none; }
+
+  .copilot-panel { display: none; }
+
+  .meter-group {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  #hudContainer {
+    padding: 6px 8px;
+  }
+
+  .hud-bottom-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .skill-hotbar {
+    gap: 4px;
+    padding: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .skill-card {
+    width: 42px;
+    height: 50px;
+    flex-shrink: 0;
+  }
+
+  .skill-icon { font-size: 16px; }
+  .skill-key-hint { font-size: 7px; }
+  .skill-name { font-size: 6px; }
+
+  .skill-hud-container {
+    padding: 6px 8px;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .arcade-card {
+    padding: 20px 16px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 12px;
+    max-width: 95vw;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cyber-btn {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 12px;
+  }
+
   .settings-grid { grid-template-columns: 1fr; }
   .debrief-grid { grid-template-columns: 1fr 1fr; }
-  .skill-hotbar { gap: 4px; padding: 4px; }
-  .skill-card { width: 46px; height: 56px; }
-  .skill-icon { font-size: 16px; }
+
+  .tactical-hints { display: none; }
+
+  /* Leaderboard table */
+  .leaderboard-table-wrap {
+    max-height: 250px;
+  }
+
+  .cyber-table {
+    font-size: 12px;
+  }
+
+  .cyber-table th,
+  .cyber-table td {
+    padding: 6px 8px;
+  }
+
+  .pilot-rank-main { font-size: 12px; }
+  .pilot-rank-sub { font-size: 9px; }
+  .score-cell { font-size: 13px; }
+
+  /* Space for mobile command bar at bottom */
+  body.mobile-active .hud-bottom-bar {
+    margin-bottom: 130px;
+  }
+
+  body.mobile-active #gameCanvas {
+    height: calc(100vh - 130px) !important;
+  }
+}
+
+/* =============================================
+   RESPONSIVE: SMALL PHONE (480px)
+   ============================================= */
+
+@media (max-width: 480px) {
+  .game-title { font-size: 18px; letter-spacing: 1px; }
+
+  .hud-top-bar {
+    gap: 2px;
+    padding: 2px 6px;
+  }
+
+  .hud-panel {
+    gap: 6px;
+    padding: 3px 6px;
+  }
+
+  .hud-val { font-size: 12px; }
+
+  .hud-top-center { display: none; }
+
+  .meter-group { max-width: 220px; }
+
+  .skill-card {
+    width: 36px;
+    height: 44px;
+  }
+
+  .skill-icon { font-size: 14px; }
+
+  .arcade-card {
+    padding: 16px 12px;
+    max-height: 90vh;
+  }
+
+  .modal-overlay {
+    padding: 4px;
+    padding-top: 20px;
+  }
+
+  .leaderboard-table-wrap {
+    max-height: 200px;
+  }
+
+  .mobile-touch-btn {
+    min-width: 52px;
+    font-size: 10px;
+  }
+
+  .mobile-typing-input {
+    font-size: 14px;
+    padding: 8px 6px;
+  }
+
+  .mobile-target-text {
+    font-size: 12px;
+  }
+
+  body.mobile-active .hud-bottom-bar {
+    margin-bottom: 120px;
+  }
+
+  body.mobile-active #gameCanvas {
+    height: calc(100vh - 120px) !important;
+  }
+}
+
+/* =============================================
+   MOBILE UTILITIES
+   ============================================= */
+
+/* Prevent pull-to-refresh and overscroll on mobile */
+body.mobile-active {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Virtual keyboard open adjustments */
+body.mobile-active.keyboard-open #gameCanvas {
+  transition: height 0.3s ease;
+}
+
+body.mobile-active.keyboard-open .hud-bottom-bar {
+  display: none;
+}
+
+body.mobile-active.keyboard-open .skill-hud-container {
+  display: none;
 }

@@ -1,0 +1,776 @@
+/* =========================================================
+   STELLAR STRIKE: CYBER TYPING INTERCEPTOR
+   Arcade Cyberpunk Synthwave Styling & Responsive HUD Layout
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff007f;
+  --neon-green: #00ff88;
+  --neon-yellow: #ffdd00;
+  --neon-orange: #ff8800;
+  --neon-red: #ff0044;
+  --bg-deep: #060913;
+  --bg-panel: rgba(10, 16, 32, 0.85);
+  --border-neon: rgba(0, 240, 255, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-deep);
+  color: #e0f2fe;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+#gameCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: block;
+}
+
+/* ==========================================
+   HEADS-UP DISPLAY (HUD)
+   ========================================== */
+
+#hudContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 24px;
+}
+
+.hud-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.hud-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-neon);
+  border-radius: 8px;
+  padding: 10px 18px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 10px rgba(0, 240, 255, 0.05);
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.hud-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hud-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hud-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.hud-val.glow-cyan {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.hud-val.glow-magenta {
+  color: var(--neon-magenta);
+  text-shadow: 0 0 10px var(--neon-magenta);
+}
+
+.hud-val.glow-green {
+  color: var(--neon-green);
+  text-shadow: 0 0 10px var(--neon-green);
+}
+
+#hudMultiplier.overdrive {
+  color: #ff00ff;
+  animation: pulseOverdrive 0.5s infinite alternate;
+}
+
+@keyframes pulseOverdrive {
+  0% { transform: scale(1); text-shadow: 0 0 10px #ff00ff; }
+  100% { transform: scale(1.2); text-shadow: 0 0 22px #ff0055, 0 0 35px #00ffff; }
+}
+
+/* ==========================================
+   HUD BOTTOM METERS & TACTICAL BAR
+   ========================================== */
+
+.hud-bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.meter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 320px;
+}
+
+.meter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meter-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.meter-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.meter-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.15s ease-out, background-color 0.3s;
+}
+
+#shieldBarFill {
+  background: linear-gradient(90deg, #0088ff, var(--neon-cyan));
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+#empBarFill {
+  background: linear-gradient(90deg, #9900ff, var(--neon-magenta));
+  box-shadow: 0 0 10px var(--neon-magenta);
+}
+
+.emp-ready {
+  color: var(--neon-yellow) !important;
+  font-weight: bold;
+  animation: blink 0.8s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--neon-yellow); }
+  50% { opacity: 0.4; }
+}
+
+.tactical-hints {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-neon);
+  border-radius: 8px;
+  padding: 8px 16px;
+  display: flex;
+  gap: 18px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.tactical-hint-key {
+  color: var(--neon-cyan);
+  font-weight: bold;
+  background: rgba(0, 240, 255, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+/* ==========================================
+   MODAL DIALOGS & OVERLAYS
+   ========================================== */
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 50;
+  background: rgba(3, 7, 18, 0.82);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.arcade-card {
+  background: linear-gradient(135deg, rgba(13, 20, 38, 0.95), rgba(7, 11, 22, 0.95));
+  border: 2px solid var(--neon-cyan);
+  border-radius: 14px;
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.08);
+  padding: 36px 44px;
+  max-width: 680px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.arcade-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-magenta), transparent);
+  animation: scanBanner 3s linear infinite;
+}
+
+@keyframes scanBanner {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
+}
+
+.game-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #ffffff;
+  text-shadow: 0 0 15px var(--neon-cyan), 0 0 30px rgba(0, 240, 255, 0.5);
+  margin-bottom: 6px;
+}
+
+.game-subtitle {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 15px;
+  color: var(--neon-magenta);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.game-desc {
+  font-size: 16px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.cyber-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--neon-cyan);
+  border: 2px solid var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  transition: all 0.2s ease-in-out;
+  text-transform: uppercase;
+}
+
+.cyber-btn:hover {
+  background: var(--neon-cyan);
+  color: #030712;
+  box-shadow: 0 0 25px var(--neon-cyan), 0 0 40px rgba(0, 240, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.cyber-btn.primary {
+  background: linear-gradient(90deg, #ff007f, #00f0ff);
+  color: #ffffff;
+  border: none;
+  font-size: 18px;
+  padding: 16px 32px;
+  box-shadow: 0 0 25px rgba(255, 0, 127, 0.4);
+}
+
+.cyber-btn.primary:hover {
+  box-shadow: 0 0 35px #ff007f, 0 0 50px #00f0ff;
+  transform: scale(1.03);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.setting-btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  background: rgba(15, 23, 42, 0.6);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.setting-btn:hover {
+  border-color: var(--neon-cyan);
+  color: #ffffff;
+  background: rgba(0, 240, 255, 0.1);
+}
+
+/* ==========================================
+   STAT SUMMARY & BADGES (GAME OVER)
+   ========================================== */
+
+.debrief-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.debrief-item {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 8px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.debrief-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #7dd3fc;
+  margin-bottom: 4px;
+}
+
+.debrief-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.rank-badge-box {
+  background: linear-gradient(90deg, rgba(255, 0, 127, 0.15), rgba(0, 240, 255, 0.15));
+  border: 1px solid var(--neon-magenta);
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin-bottom: 24px;
+}
+
+.rank-badge-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+}
+
+.rank-badge-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 10px rgba(255, 221, 0, 0.5);
+  margin-top: 4px;
+}
+
+/* ==========================================
+   TUTORIAL INSTRUCTIONS MODAL
+   ========================================== */
+
+.tutorial-list {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.tutorial-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.tutorial-icon {
+  font-size: 22px;
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid var(--neon-cyan);
+  border-radius: 8px;
+  color: var(--neon-cyan);
+}
+
+.tutorial-text strong {
+  color: var(--neon-cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+}
+
+/* ==========================================
+   SKILL HOTBAR & SCORE MILESTONE SYSTEM
+   ========================================== */
+
+.skill-hud-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.skill-progress-box {
+  background: rgba(10, 16, 32, 0.9);
+  border: 1px solid var(--border-neon);
+  border-radius: 6px;
+  padding: 4px 14px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #7dd3fc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(6px);
+}
+
+.skill-progress-bar-wrap {
+  width: 140px;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.skill-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f0ff, #00ff88);
+  transition: width 0.2s ease;
+  box-shadow: 0 0 6px #00ff88;
+}
+
+.skill-hotbar {
+  display: flex;
+  gap: 8px;
+  background: rgba(7, 12, 26, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.skill-card {
+  width: 58px;
+  height: 68px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(0, 240, 255, 0.3);
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.skill-card.unlocked {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.skill-card.unlocked:hover {
+  transform: translateY(-3px);
+  border-color: #ffffff;
+  box-shadow: 0 0 16px var(--neon-cyan);
+}
+
+.skill-card.locked {
+  filter: grayscale(0.85);
+  opacity: 0.55;
+  border-color: rgba(100, 116, 139, 0.4);
+}
+
+.skill-card.ready {
+  animation: pulseSkill 1.2s infinite alternate;
+}
+
+@keyframes pulseSkill {
+  0% { box-shadow: 0 0 8px rgba(0, 240, 255, 0.3); }
+  100% { box-shadow: 0 0 18px var(--neon-cyan); }
+}
+
+.skill-card.active-buff {
+  border-color: #ff00ff !important;
+  box-shadow: 0 0 20px #ff00ff !important;
+}
+
+.skill-key-badge {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.skill-icon {
+  font-size: 20px;
+  margin: 2px 0;
+}
+
+.skill-name-tag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  color: #cbd5e1;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 52px;
+}
+
+.skill-cd-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffaa00;
+  z-index: 5;
+}
+
+/* ==========================================
+   SKILL UNLOCK POPUP BANNER
+   ========================================== */
+
+#skillUnlockBanner {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(90deg, rgba(255, 0, 127, 0.95), rgba(0, 240, 255, 0.95));
+  border: 2px solid #ffffff;
+  border-radius: 12px;
+  padding: 16px 36px;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.7), 0 0 80px rgba(255, 0, 127, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 100;
+  pointer-events: none;
+  animation: bannerPop 3s forwards;
+}
+
+@keyframes bannerPop {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  25% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.9); }
+}
+
+.banner-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.banner-skill-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 12px rgba(255, 221, 0, 0.8);
+  margin: 4px 0;
+}
+
+.banner-hint {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+/* ==========================================
+   MULTIPLAYER CO-PILOT HUD & ROOM MODAL
+   ========================================== */
+
+.copilot-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 16, 32, 0.88);
+  border: 1px solid #ff007f;
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.25);
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+
+.room-code-display-box {
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px dashed var(--neon-cyan);
+  border-radius: 10px;
+  padding: 16px 24px;
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-code-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--neon-cyan);
+  letter-spacing: 4px;
+  text-shadow: 0 0 15px var(--neon-cyan);
+}
+
+.room-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid var(--border-neon);
+  border-radius: 8px;
+  font-family: 'Orbitron', monospace;
+  font-size: 20px;
+  color: #ffffff;
+  text-align: center;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  outline: none;
+}
+
+.room-input:focus {
+  border-color: var(--neon-magenta);
+  box-shadow: 0 0 15px var(--neon-magenta);
+}
+
+.players-roster {
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.roster-card {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.roster-card.p1 { border-color: var(--neon-cyan); }
+.roster-card.p2 { border-color: var(--neon-magenta); }
+
+.roster-avatar {
+  font-size: 28px;
+}
+
+.roster-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.roster-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+}
+
+/* Responsive Scaling */
+@media (max-width: 768px) {
+  .game-title { font-size: 28px; }
+  .hud-panel { gap: 12px; padding: 6px 12px; }
+  .hud-val { font-size: 16px; }
+  .meter-group { width: 220px; }
+  .tactical-hints { display: none; }
+  .settings-grid { grid-template-columns: 1fr; }
+  .debrief-grid { grid-template-columns: 1fr 1fr; }
+  .skill-hotbar { gap: 4px; padding: 4px; }
+  .skill-card { width: 46px; height: 56px; }
+  .skill-icon { font-size: 16px; }
+}

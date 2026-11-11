@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STELLAR STRIKE: Cyber Typing Interceptor</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Canvas Utama Permainan -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- CRT Scanline overlay: CSS-based, zero canvas cost, toggled by JS -->
+  <div id="crtOverlay" class="crt-overlay"></div>
+
+  <!-- Heads-Up Display (HUD) Interaktif -->
+  <div id="hudContainer">
+    <!-- Top HUD Bar: Statistik Tempur & Typing Performance -->
+    <div class="hud-top-bar">
+      <!-- Panel Kiri: Skor & Sektor Wave -->
+      <div class="hud-panel">
+        <div class="hud-stat">
+          <span class="hud-label">SKOR TEMPUR</span>
+          <span id="hudScore" class="hud-val glow-cyan">0</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">GELOMBANG</span>
+          <span id="hudWave" class="hud-val glow-magenta">1</span>
+        </div>
+      </div>
+
+      <!-- Center HUD: Top Pilot & Leaderboard Shortcut (Selalu Muncul di dalam Game) -->
+      <div class="hud-top-center" style="display: flex; flex-direction: column; align-items: center; pointer-events: auto;">
+        <div id="hudLeaderboardPill" class="hud-leaderboard-pill" title="Klik untuk membuka Leaderboard [TAB]">
+          <span style="font-size: 16px;">👑</span>
+          <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <span style="font-size: 9px; font-family: 'Share Tech Mono', monospace; color: #ffdd00; letter-spacing: 1px;">REKOR GALAKSI (SUPABASE)</span>
+            <span id="hudTopScore" style="font-size: 13px; font-family: 'Orbitron', monospace; font-weight: 700; color: #ffffff;">CYBER_ACE: 25,400 PTS</span>
+          </div>
+          <span class="hud-key-tag">[TAB]</span>
+        </div>
+      </div>
+
+      <!-- Co-Pilot Status Panel (Multiplayer Mode) -->
+      <div id="copilotPanel" class="copilot-panel hidden">
+        <div style="font-size: 24px;">🛸</div>
+        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+          <span id="copilotName" class="hud-label" style="color: #ff007f;">PILOT KAWAN (CO-OP)</span>
+          <div style="display: flex; gap: 12px; font-size: 13px; font-family: 'Share Tech Mono', monospace;">
+            <span>PERISAI: <strong id="copilotShields" style="color: #00ff88;">100%</strong></span>
+            <span>KECEPATAN: <strong id="copilotWpm" style="color: #00f0ff;">0 WPM</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Kanan: Kecepatan WPM, Akurasi, dan Combo Multiplier -->
+      <div class="hud-panel">
+        <div class="hud-stat">
+          <span class="hud-label">KECEPATAN</span>
+          <span id="hudWpm" class="hud-val glow-cyan">0</span>
+          <span style="font-size: 10px; color: #7dd3fc; margin-top: -3px;">WPM</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">AKURASI</span>
+          <span id="hudAccuracy" class="hud-val glow-green">100%</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">STREAK / MULTIPLIER</span>
+          <div style="display: flex; align-items: baseline; gap: 6px;">
+            <span id="hudCombo" class="hud-val">0</span>
+            <span id="hudMultiplier" class="hud-val glow-magenta">x1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Skill Unlock Notification Banner -->
+    <div id="skillUnlockBanner" class="hidden">
+      <span class="banner-title">⚡ SKILL KHUSUS TERBUKA! ⚡</span>
+      <span id="bannerSkillName" class="banner-skill-name">PLASMA NOVA</span>
+      <span id="bannerSkillHint" class="banner-hint">TEKAN [1] UNTUK MENGAKTIFKAN TEMBAKAN PENEMBUS!</span>
+    </div>
+
+    <!-- Bottom HUD Bar: Perisai, Skill Hotbar, dan Tombol Taktis -->
+    <div class="hud-bottom-bar">
+      <!-- Pengukur Status Kapal -->
+      <div class="meter-group">
+        <!-- Status Integritas Perisai (Shield) -->
+        <div class="meter-container">
+          <div class="meter-header">
+            <span>PERISAI KAPAL</span>
+            <span id="shieldText">100%</span>
+          </div>
+          <div class="meter-bar">
+            <div id="shieldBarFill" class="meter-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Pengukur Daya EMP Shockwave -->
+        <div class="meter-container">
+          <div class="meter-header">
+            <span>DAYA GELOMBANG EMP</span>
+            <span id="empText">0%</span>
+          </div>
+          <div class="meter-bar">
+            <div id="empBarFill" class="meter-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Skill Hotbar (Unlocked via Score Milestones) -->
+      <div class="skill-hud-container">
+        <!-- Score Progress to Next Skill -->
+        <div class="skill-progress-box">
+          <span id="skillProgressLabel">PROGRESS: 0 / 1,000 PTS</span>
+          <div class="skill-progress-bar-wrap">
+            <div id="skillProgressBarFill" class="skill-progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <span id="nextSkillName" style="color: #ffdd00; font-weight: bold;">[1] Plasma Nova</span>
+        </div>
+
+        <!-- Hotbar Slots [1] to [6] -->
+        <div id="skillHotbar" class="skill-hotbar">
+          <!-- Skill 1: Plasma Nova (1000 PTS) -->
+          <div id="skillSlot1" class="skill-card locked" title="Plasma Nova (1,000 PTS) - Tembakan penembus lurus">
+            <span class="skill-key-badge">[1]</span>
+            <div class="skill-icon">💥</div>
+            <span class="skill-name-tag">NOVA</span>
+            <div id="skillCd1" class="skill-cd-overlay hidden">0</div>
+          </div>
+
+          <!-- Skill 2: Orbital Drone (2500 PTS) -->
+          <div id="skillSlot2" class="skill-card locked" title="Orbital Drone (2,500 PTS) - Drone otomatis tembak rudal">
+            <span class="skill-key-badge">[2]</span>
+            <div class="skill-icon">🛸</div>
+            <span class="skill-name-tag">DRONE</span>
+            <div id="skillCd2" class="skill-cd-overlay hidden">0</div>
+          </div>
+
+          <!-- Skill 3: Chrono Stasis (5000 PTS) -->
+          <div id="skillSlot3" class="skill-card locked" title="Chrono Stasis (5,000 PTS) - Gerak lambat waktu 70%">
+            <span class="skill-key-badge">[3]</span>
+            <div class="skill-icon">⏱️</div>
+            <span class="skill-name-tag">CHRONO</span>
+            <div id="skillCd3" class="skill-cd-overlay hidden">0</div>
+          </div>
+
+          <!-- Skill 4: Multi-Vector Cannons (8500 PTS) -->
+          <div id="skillSlot4" class="skill-card locked" title="Multi-Vector (8,500 PTS) - Tembakan 5 arah menyebar">
+            <span class="skill-key-badge">[4]</span>
+            <div class="skill-icon">⚡</div>
+            <span class="skill-name-tag">SPREAD</span>
+            <div id="skillCd4" class="skill-cd-overlay hidden">0</div>
+          </div>
+
+          <!-- Skill 5: Nanite Shield Repair (13000 PTS) -->
+          <div id="skillSlot5" class="skill-card locked" title="Nanite Repair (13,000 PTS) - Pulihkan +50% perisai">
+            <span class="skill-key-badge">[5]</span>
+            <div class="skill-icon">🛡️</div>
+            <span class="skill-name-tag">REPAIR</span>
+            <div id="skillCd5" class="skill-cd-overlay hidden">0</div>
+          </div>
+
+          <!-- Skill 6: Supernova Annihilator (20000 PTS) -->
+          <div id="skillSlot6" class="skill-card locked" title="Supernova (20,000 PTS) - Ledakan nuklir kosmik layar penuh">
+            <span class="skill-key-badge">[6]</span>
+            <div class="skill-icon">🌌</div>
+            <span class="skill-name-tag">NUKE</span>
+            <div id="skillCd6" class="skill-cd-overlay hidden">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Petunjuk Tombol Taktis Cepat -->
+      <div class="tactical-hints">
+        <div><span class="tactical-hint-key">[SPACE]</span> EMP SHOCKWAVE</div>
+        <div><span class="tactical-hint-key">[1-6]</span> SKILL KHUSUS</div>
+        <div><span class="tactical-hint-key">[TAB]</span> LEADERBOARD</div>
+        <div><span class="tactical-hint-key">[ESC]</span> JEDA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Start Menu -->
+  <div id="startMenu" class="modal-overlay">
+    <div class="arcade-card">
+      <h1 class="game-title">STELLAR STRIKE</h1>
+      <div class="game-subtitle">CYBER TYPING INTERCEPTOR</div>
+      <p class="game-desc">
+        Kombinasi intens antara <strong>arcade space shooter retro</strong> dan <strong>mekanik game mengetik cepat</strong>.
+        Ketik target untuk menembakkan laser plasma, hancurkan rudal musuh dengan reaksi refleks satu huruf,
+        dan latih fokus multitasking tangan antara pandangan layar dan keyboard!
+      </p>
+
+      <div id="highScoreBanner" style="font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #00ff88; margin-bottom: 18px; letter-spacing: 1px;">
+        🏆 REKOR TERTINGGI: <span id="topScoreDisplay">BELUM ADA REKOR</span>
+      </div>
+
+      <div class="btn-group">
+        <button id="startBtn" class="cyber-btn primary">🚀 MULAI SOLO (SINGLE PLAYER)</button>
+        <button id="multiplayerBtn" class="cyber-btn" style="border-color: #ff007f; color: #ff007f; box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);">👥 MAIN BERSAMA TEMAN (KODE RUANG)</button>
+        <button id="openLeaderboardBtn" class="cyber-btn" style="border-color: #ffdd00; color: #ffdd00; box-shadow: 0 0 15px rgba(255, 221, 0, 0.3);">🏆 LEADERBOARD GALAKSI</button>
+        <button id="tutorialBtn" class="cyber-btn">📖 PANDUAN TAKTIK & KONTROL</button>
+      </div>
+
+      <!-- Pengaturan Cepat -->
+      <div class="settings-grid">
+        <button id="langToggleBtn" class="setting-btn">BAHASA: INDONESIA</button>
+        <button id="controlModeBtn" class="setting-btn">PILOT: AUTO-STABILIZER</button>
+        <button id="crtToggleBtn" class="setting-btn">CRT FX: ON</button>
+        <button id="muteBtn" class="setting-btn">🔊 SUARA: NYALA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Tutorial & Panduan Taktik -->
+  <div id="tutorialModal" class="modal-overlay hidden">
+    <div class="arcade-card" style="max-width: 720px;">
+      <h2 class="game-title" style="font-size: 28px;">PANDUAN TEMPUR ANTARIKSA</h2>
+      <div class="game-subtitle">CARA BERMAIN & MELATIH FOKUS MULTITASKING</div>
+
+      <div class="tutorial-list">
+        <div class="tutorial-item">
+          <div class="tutorial-icon">🎯</div>
+          <div class="tutorial-text">
+            <strong>1. PENGUNCIAN TARGET (WORD LOCK-ON):</strong><br>
+            Ketik huruf pertama dari kata di atas kapal musuh. Kapalmu akan langsung membidik dan mengunci laser. Ketik sisa kata dengan ritme konstan untuk meledakkannya!
+          </div>
+        </div>
+
+        <div class="tutorial-item">
+          <div class="tutorial-icon">⚡</div>
+          <div class="tutorial-text">
+            <strong>2. POINT-DEFENSE INTERCEPTION (REFLEKS SATU HURUF):</strong><br>
+            Musuh besar meluncurkan rudal berpemandu dengan kotak huruf merah (contoh: <code>[X]</code>, <code>[7]</code>, <code>[R]</code>). Ketik huruf tersebut seketika untuk menembak jatuh rudal di udara sebelum menghantam perisaimu!
+          </div>
+        </div>
+
+        <div class="tutorial-item">
+          <div class="tutorial-icon">💥</div>
+          <div class="tutorial-text">
+            <strong>3. EMP SHOCKWAVE BLAST [SPASI]:</strong><br>
+            Mengetik huruf dengan benar mengisi daya EMP. Tekan <strong>[SPACEBAR]</strong> saat terdesak untuk melepaskan gelombang kejut yang membersihkan semua proyektil dan memukul mundur armada musuh!
+          </div>
+        </div>
+
+        <div class="tutorial-item">
+          <div class="tutorial-icon">🔄</div>
+          <div class="tutorial-text">
+            <strong>4. GANTI TARGET DARURAT [BACKSPACE]:</strong><br>
+            Jika kamu sedang mengetik musuh yang jauh namun ada drone cepat yang mendekat kritis, tekan <strong>[BACKSPACE]</strong> untuk membatalkan kunci dan langsung ketik musuh terdekat!
+          </div>
+        </div>
+
+        <div class="tutorial-item">
+          <div class="tutorial-icon">🕹️</div>
+          <div class="tutorial-text">
+            <strong>5. DUA MODE PILOT:</strong><br>
+            • <em>Auto-Stabilizer:</em> Kapal bermanuver otomatis membidik sasaran (fokus 100% pada typing combo).<br>
+            • <em>Manual (Mouse):</em> Gerakkan mouse untuk menghindari proyektil secara fisik sambil mengetik!
+          </div>
+        </div>
+      </div>
+
+      <button id="closeTutorialBtn" class="cyber-btn primary">SAYA SIAP TEMPUR!</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Multiplayer Room Code Lobby -->
+  <div id="multiplayerModal" class="modal-overlay hidden">
+    <div class="arcade-card" style="max-width: 640px;">
+      <h2 class="game-title" style="font-size: 28px; color: var(--neon-magenta); text-shadow: 0 0 15px var(--neon-magenta);">ARMADA CO-OP MULTIPLAYER</h2>
+      <div class="game-subtitle">MAIN BERSAMA TEMAN DENGAN KODE RUANG</div>
+
+      <p style="font-size: 14px; color: #94a3b8; margin-bottom: 16px;">
+        Terbangkan kapal berdampingan dengan temanmu! Skor dan gelombang dihadapi bersama,
+        dan kedua pemain dapat membuka skill khusus serta saling melindungi dari rudal!
+      </p>
+
+      <!-- Pilihan Buat atau Gabung -->
+      <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <button id="tabCreateRoom" class="cyber-btn primary" style="flex: 1; padding: 10px; font-size: 14px;">➕ BUAT RUANG BARU</button>
+        <button id="tabJoinRoom" class="cyber-btn" style="flex: 1; padding: 10px; font-size: 14px;">🔑 GABUNG RUANG</button>
+      </div>
+
+      <!-- Area Tampilan Buat Ruang -->
+      <div id="createRoomSection" class="room-code-display-box">
+        <span style="font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #cbd5e1;">BAGIKAN KODE RUANG INI KE TEMANMU:</span>
+        <span id="displayRoomCode" class="room-code-val">GALAXY-8824</span>
+        <span id="roomStatusText" style="font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #ffdd00;">STATUS: MENUNGGU PILOT 2...</span>
+      </div>
+
+      <!-- Area Input Gabung Ruang -->
+      <div id="joinRoomSection" class="hidden">
+        <input id="roomCodeInput" type="text" class="room-input" placeholder="KODE RUANG (CONTOH: GALAXY-8824)" maxlength="16">
+        <button id="submitJoinRoomBtn" class="cyber-btn primary" style="width: 100%; margin-bottom: 14px;">🔗 HUBUNGKAN KE RUANG TEMAN</button>
+      </div>
+
+      <!-- Roster Pemain dalam Ruang -->
+      <div class="players-roster">
+        <div class="roster-card p1">
+          <div class="roster-avatar">🚀</div>
+          <div id="rosterP1Name" class="roster-name" style="color: var(--neon-cyan);">PILOT ALFA (KAMU)</div>
+          <div id="rosterP1Status" class="roster-status" style="color: #00ff88;">SIAP TEMPUR ✅</div>
+        </div>
+        <div class="roster-card p2">
+          <div class="roster-avatar">🛸</div>
+          <div id="rosterP2Name" class="roster-name" style="color: var(--neon-magenta);">PILOT BETA (KAWAN)</div>
+          <div id="rosterP2Status" class="roster-status" style="color: #ffaa00;">MENUNGGU KONEKSI ⏳</div>
+        </div>
+      </div>
+
+      <!-- Tombol Aksi -->
+      <div class="btn-group">
+        <button id="launchCoopBtn" class="cyber-btn primary" style="display: none;">🚀 LUNCURKAN ARMADA (MULAI BERSAMA)</button>
+        <button id="closeMultiplayerBtn" class="cyber-btn">KEMBALI KE MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Pause Screen -->
+  <div id="pauseModal" class="modal-overlay hidden">
+    <div class="arcade-card" style="max-width: 480px;">
+      <h2 class="game-title" style="font-size: 32px;">MISI DIJEDA</h2>
+      <div class="game-subtitle">SYSTEM SUSPENDED</div>
+      <div class="btn-group" style="margin-top: 24px;">
+        <button id="resumeBtn" class="cyber-btn primary">▶️ LANJUTKAN TEMPUR</button>
+        <button id="pauseLeaderboardBtn" class="cyber-btn" style="border-color: #ffdd00; color: #ffdd00;">🏆 LEADERBOARD GALAKSI</button>
+        <button onclick="window.game.startGame()" class="cyber-btn">🔄 RESTART MISI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Game Over / Career Debrief -->
+  <div id="gameOverModal" class="modal-overlay hidden">
+    <div class="arcade-card">
+      <h2 class="game-title" style="color: var(--neon-red); text-shadow: 0 0 15px var(--neon-red);">PERISAI HANCUR</h2>
+      <div class="game-subtitle">MISI SELESAI - LAPORAN KINERJA PILOT</div>
+
+      <!-- Hasil Statistik Tempur -->
+      <div class="debrief-grid">
+        <div class="debrief-item">
+          <span class="debrief-label">TOTAL SKOR</span>
+          <span id="goScore" class="debrief-val glow-cyan">0</span>
+        </div>
+        <div class="debrief-item">
+          <span class="debrief-label">SEKTOR WAVE</span>
+          <span id="goWave" class="debrief-val glow-magenta">1</span>
+        </div>
+        <div class="debrief-item">
+          <span class="debrief-label">KECEPATAN PUNCAK</span>
+          <span id="goWpm" class="debrief-val glow-green">0 WPM</span>
+        </div>
+        <div class="debrief-item">
+          <span class="debrief-label">AKURASI KETIK</span>
+          <span id="goAcc" class="debrief-val">0%</span>
+        </div>
+        <div class="debrief-item">
+          <span class="debrief-label">KATA DIHANCURKAN</span>
+          <span id="goWords" class="debrief-val">0</span>
+        </div>
+        <div class="debrief-item">
+          <span class="debrief-label">STREAK COMBO</span>
+          <span id="goCombo" class="debrief-val">x5</span>
+        </div>
+      </div>
+
+      <!-- Peringkat Pilot -->
+      <div class="rank-badge-box">
+        <div class="rank-badge-title">PENILAIAN EVALUASI PILOT:</div>
+        <div id="goRank" class="rank-badge-name">KADET ANTARIKSA</div>
+      </div>
+
+      <!-- Leaderboard Submission Box -->
+      <div class="leaderboard-submit-box">
+        <div style="font-size: 13px; color: #94a3b8; font-family: 'Share Tech Mono', monospace; margin-bottom: 6px;">
+          SIMPAN SKOR KE LEADERBOARD GLOBAL:
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+          <input id="goPilotName" type="text" class="room-input" placeholder="MASUKKAN NAMA PILOT" maxlength="16" style="margin: 0; flex: 1; text-align: left; font-size: 14px;" />
+          <button id="goSubmitScoreBtn" class="cyber-btn" style="border-color: #00ff88; color: #00ff88; white-space: nowrap; padding: 10px 14px;">📤 KIRIM SKOR</button>
+        </div>
+        <div id="goSubmitStatus" style="font-family: 'Share Tech Mono', monospace; font-size: 12px; min-height: 18px; color: #ffdd00;"></div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button id="goViewLeaderboardBtn" class="cyber-btn" style="flex: 1; border-color: #ffdd00; color: #ffdd00;">🏆 LEADERBOARD</button>
+        <button id="restartBtn" class="cyber-btn primary" style="flex: 1;">🚀 MAIN LAGI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Leaderboard Galaksi (Supabase Cloud + Local) -->
+  <div id="leaderboardModal" class="modal-overlay hidden">
+    <div class="arcade-card" style="max-width: 780px; width: 95%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h2 class="game-title" style="font-size: 26px; color: #ffdd00; text-shadow: 0 0 15px rgba(255, 221, 0, 0.4); margin: 0;">🏆 LEADERBOARD GALAKSI</h2>
+        <span id="leaderboardStatusBadge" class="status-badge local">MEMERIKSA KONEKSI...</span>
+      </div>
+      <div class="game-subtitle" style="margin-bottom: 16px;">REKOR PILOT TERBAIK DI SELURUH ALAM SEMESTA</div>
+
+      <!-- Filter Tabs -->
+      <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+        <button id="tabGlobalLeaderboard" class="cyber-btn primary" style="flex: 1; padding: 8px; font-size: 13px;">🌐 PERINGKAT GLOBAL (TOP 20)</button>
+        <button id="tabLocalLeaderboard" class="cyber-btn" style="flex: 1; padding: 8px; font-size: 13px;">💾 REKOR LOKAL (KOMPUTER INI)</button>
+      </div>
+
+      <!-- Leaderboard Table Container -->
+      <div class="leaderboard-table-wrap">
+        <div id="leaderboardLoading" style="display: none; text-align: center; padding: 24px; color: var(--neon-cyan); font-family: 'Share Tech Mono', monospace;">
+          ⚡ MENGAMBIL DATA DARI SUPABASE...
+        </div>
+        <table class="cyber-table">
+          <thead>
+            <tr>
+              <th style="width: 50px; text-align: center;">#</th>
+              <th>PILOT</th>
+              <th style="text-align: right;">SKOR</th>
+              <th style="text-align: center;">WAVE</th>
+              <th style="text-align: center;">WPM</th>
+              <th style="text-align: center;">AKURASI</th>
+              <th style="text-align: center;">TANGGAL</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardTableBody">
+            <!-- Populated dynamically via js/leaderboard.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button id="refreshLeaderboardBtn" class="cyber-btn" style="flex: 1;">🔄 SEGARKAN DATA</button>
+        <button id="closeLeaderboardBtn" class="cyber-btn primary" style="flex: 1;">❌ TUTUP LEADERBOARD</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Konfigurasi Supabase untuk mode standalone (buka langsung via index.html)
+    window.SUPABASE_CONFIG = {
+      url: "https://serhxrtbdafgicunnkpc.supabase.co",
+      anonKey: "sb_publishable_fRYujzUgg855CH1z-wJqUA_EIrhn_DY"
+    };
+  </script>
+  <script src="js/words.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/skills.js"></script>
+  <script src="js/multiplayer.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/leaderboard.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

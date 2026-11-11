@@ -923,8 +923,9 @@ class GameEngine {
       const missile = this.missiles[i];
       missile.update(effectiveDt, this.player);
 
-      // Trail particles
-      if (Math.random() < 0.4) {
+      // Trail particles — reduced spawn chance and gated by global particle cap
+      // to prevent particle spam from waves of enemy missiles causing freeze.
+      if (this.particles.length < 250 && Math.random() < 0.15) {
         this.particles.push(new Particle(missile.x, missile.y, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, "#ff0055", 3, 0.4, 0.05, "smoke"));
       }
 
@@ -1067,18 +1068,19 @@ class GameEngine {
     this.ctx.lineWidth = 1;
 
     const gridSize = 60;
+    // Batch all grid lines into a single path with ONE stroke call
+    // instead of ~50 separate beginPath()/stroke() calls per frame.
+    // This eliminates dozens of GPU draw calls and prevents frame drops.
+    this.ctx.beginPath();
     for (let x = 0; x < this.width; x += gridSize) {
-      this.ctx.beginPath();
       this.ctx.moveTo(x, 0);
       this.ctx.lineTo(x, this.height);
-      this.ctx.stroke();
     }
     for (let y = 0; y < this.height; y += gridSize) {
-      this.ctx.beginPath();
       this.ctx.moveTo(0, y);
       this.ctx.lineTo(this.width, y);
-      this.ctx.stroke();
     }
+    this.ctx.stroke();
     this.ctx.restore();
   }
 

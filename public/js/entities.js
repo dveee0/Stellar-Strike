@@ -69,10 +69,10 @@ class Particle {
       ctx.rotate(this.angle);
       ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
     } else {
+      // Removed ctx.shadowBlur/ shadowColor (expensive Gaussian blur per particle)
+      // to prevent freeze during mass explosions.
       ctx.fillStyle = this.color;
       ctx.globalAlpha = alpha;
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(this.x, this.y, Math.max(0.5, this.size * alpha), 0, Math.PI * 2);
       ctx.fill();
@@ -106,8 +106,7 @@ class FloatingText {
     ctx.save();
     ctx.font = `bold ${this.size}px 'Courier New', monospace, sans-serif`;
     ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 10;
+    // Removed ctx.shadowBlur/ shadowColor (expensive per-text Gaussian blur)
     ctx.globalAlpha = alpha;
     ctx.textAlign = "center";
     ctx.fillText(this.text, this.x, this.y);
@@ -138,10 +137,9 @@ class LaserBolt {
   draw(ctx) {
     ctx.save();
     ctx.strokeStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 12;
     ctx.lineWidth = 3;
     ctx.globalAlpha = Math.max(0, 1 - this.progress);
+    // Removed ctx.shadowBlur/ shadowColor (expensive per-laser Gaussian blur)
 
     ctx.beginPath();
     ctx.moveTo(this.startX, this.startY);

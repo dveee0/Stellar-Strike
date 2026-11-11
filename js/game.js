@@ -278,12 +278,21 @@ class GameEngine {
       });
     }
 
-    // Update target preview periodically
+    // Update target preview periodically — store interval ID so it can be cleared
+    // to prevent multiple accumulating intervals if bindEvents() is called repeatedly.
     this._mobilePreviewInterval = setInterval(() => {
       if (this.state === this.STATE_PLAYING) {
         this.updateMobileTargetPreview();
       }
     }, 200);
+  }
+
+  // Cleanup: clear persistent intervals/timers to prevent accumulation
+  destroy() {
+    if (this._mobilePreviewInterval) {
+      clearInterval(this._mobilePreviewInterval);
+      this._mobilePreviewInterval = null;
+    }
   }
 
   /** Process a single typed character — shared by desktop keydown and mobile input */
@@ -918,7 +927,7 @@ class GameEngine {
       this.boss.update(effectiveDt, (src) => this.onEnemyShootMissile(src));
     }
 
-    // 7. Missiles update & collision with player
+    // 7. Missiles update & collision with player — hard cap to prevent unbounded growth causing freeze
     for (let i = this.missiles.length - 1; i >= 0; i--) {
       const missile = this.missiles[i];
       missile.update(effectiveDt, this.player);
@@ -940,6 +949,10 @@ class GameEngine {
         this.addFloatingText(this.player.x, this.player.y - 40, "MISSILE IMPACT! -15%", "#ff3300", 16, 1.0);
         this.checkGameOver();
       }
+    }
+    // Hard cap on missiles to prevent freeze from endless enemy fire
+    if (this.missiles.length > 120) {
+      this.missiles.splice(0, this.missiles.length - 120);
     }
 
     // 8. Laser bolts update
@@ -1344,8 +1357,7 @@ class GameEngine {
     ctx.translate(x, y);
     ctx.fillStyle = "#0c2826";
     ctx.strokeStyle = "#00ff88";
-    ctx.shadowColor = "#00ff88";
-    ctx.shadowBlur = 10;
+    // Removed shadowBlur/ shadowColor (expensive per-frame drone glow)
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, 10, 0, Math.PI * 2);

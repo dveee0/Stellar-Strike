@@ -226,8 +226,9 @@ class Player {
       this.targetAngle = -Math.PI / 2;
     }
 
-    // Smooth angle interpolation
+    // Smooth angle interpolation — NaN guard to prevent infinite while loop
     let diff = this.targetAngle - this.angle;
+    if (isNaN(diff)) diff = 0;
     while (diff < -Math.PI) diff += Math.PI * 2;
     while (diff > Math.PI) diff -= Math.PI * 2;
     this.angle += diff * 0.2;
@@ -279,20 +280,16 @@ class Player {
     // 2. Shield Glow Aura if shields are healthy
     if (this.shields > 25) {
       ctx.strokeStyle = "rgba(0, 240, 255, 0.25)";
-      ctx.shadowColor = "#00f0ff";
-      ctx.shadowBlur = 10;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, this.radius + 6, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // 3. Futuristic Hull Geometry
+    // 3. Futuristic Hull Geometry — removed shadowBlur/ shadowColor (expensive per-frame Gaussian blur)
     ctx.fillStyle = "#0c1527";
     ctx.strokeStyle = "#00f0ff";
     ctx.lineWidth = 2;
-    ctx.shadowColor = "#00f0ff";
-    ctx.shadowBlur = 8;
 
     ctx.beginPath();
     // Nose
@@ -311,10 +308,8 @@ class Player {
     ctx.fill();
     ctx.stroke();
 
-    // 4. Cockpit Canopy
+    // 4. Cockpit Canopy — removed shadowBlur/ shadowColor
     ctx.fillStyle = "#ff007f";
-    ctx.shadowColor = "#ff007f";
-    ctx.shadowBlur = 6;
     ctx.beginPath();
     ctx.moveTo(0, -18);
     ctx.lineTo(5, -4);
@@ -435,11 +430,9 @@ class Enemy {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // 1. Draw Target Reticle if locked
+    // 1. Draw Target Reticle if locked — removed shadowBlur/ shadowColor
     if (this.isLocked) {
       ctx.strokeStyle = "#ff0055";
-      ctx.shadowColor = "#ff0055";
-      ctx.shadowBlur = 12;
       ctx.lineWidth = 2;
 
       // Rotating targeting brackets
@@ -477,8 +470,6 @@ class Enemy {
   drawScout(ctx) {
     ctx.fillStyle = "#161124";
     ctx.strokeStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 8;
     ctx.lineWidth = 2;
 
     ctx.beginPath();
@@ -500,8 +491,6 @@ class Enemy {
   drawFighter(ctx) {
     ctx.fillStyle = "#0c1a2d";
     ctx.strokeStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 10;
     ctx.lineWidth = 2;
 
     ctx.beginPath();
@@ -525,8 +514,6 @@ class Enemy {
   drawDestroyer(ctx) {
     ctx.fillStyle = "#1e0b2e";
     ctx.strokeStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 12;
     ctx.lineWidth = 2.5;
 
     // Heavy Cruiser Diamond Hexagon
@@ -557,8 +544,6 @@ class Enemy {
     ctx.fillStyle = "#1d202d";
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 2;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 4;
 
     ctx.beginPath();
     const sides = 7;
@@ -611,19 +596,15 @@ class Enemy {
 
     ctx.textAlign = "left";
 
-    // 1. Typed Characters (Cyan/Green - Completed)
+    // 1. Typed Characters (Cyan/Green - Completed) — removed shadowBlur/ shadowColor
     if (typedPart) {
       ctx.fillStyle = "#00ff88";
-      ctx.shadowColor = "#00ff88";
-      ctx.shadowBlur = 8;
       ctx.fillText(typedPart, startX, wordY);
     }
 
-    // 2. Next Key to Type (Flashing Gold/Magenta)
+    // 2. Next Key to Type (Flashing Gold/Magenta) — removed shadowBlur/ shadowColor
     if (nextChar) {
       ctx.fillStyle = this.isLocked ? "#ff0055" : "#ffdd00";
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 10;
       ctx.fillText(nextChar, startX + typedWidth, wordY);
     }
 
@@ -662,9 +643,10 @@ class InterceptMissile {
   }
 
   update(dt, player) {
-    // Gentle homing drift
+    // Gentle homing drift — NaN guard to prevent infinite while loop
     const currentAngle = Math.atan2(player.y - this.y, player.x - this.x);
     let diff = currentAngle - this.angle;
+    if (isNaN(diff)) diff = 0;
     while (diff < -Math.PI) diff += Math.PI * 2;
     while (diff > Math.PI) diff -= Math.PI * 2;
     this.angle += diff * 0.04;
@@ -680,11 +662,9 @@ class InterceptMissile {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // 1. Glowing warning diamond
+    // 1. Glowing warning diamond — removed shadowBlur/ shadowColor
     const pulse = 1 + Math.sin(Date.now() * 0.02) * 0.15;
     ctx.strokeStyle = "#ff0044";
-    ctx.shadowColor = "#ff0044";
-    ctx.shadowBlur = 14;
     ctx.fillStyle = "rgba(40, 0, 10, 0.9)";
     ctx.lineWidth = 2.5;
 
@@ -847,8 +827,7 @@ class Boss {
 
         ctx.fillStyle = "#220d3a";
         ctx.strokeStyle = turret.isLocked ? "#ff0055" : "#ffaa00";
-        ctx.shadowColor = ctx.strokeStyle;
-        ctx.shadowBlur = 10;
+        // Removed shadowBlur/ shadowColor (expensive per-turret Gaussian blur)
         ctx.lineWidth = 2;
 
         ctx.beginPath();
@@ -945,14 +924,12 @@ class Boss {
     ctx.textAlign = "left";
     if (typedPart) {
       ctx.fillStyle = "#00ff88";
-      ctx.shadowColor = "#00ff88";
-      ctx.shadowBlur = 8;
+      // Removed shadowBlur/ shadowColor (expensive per-enemy text blur)
       ctx.fillText(typedPart, startX, wy);
     }
     if (nextChar) {
       ctx.fillStyle = "#ff0055";
-      ctx.shadowColor = "#ff0055";
-      ctx.shadowBlur = 10;
+      // Removed shadowBlur/ shadowColor (expensive per-enemy text blur)
       ctx.fillText(nextChar, startX + typedWidth, wy);
     }
     if (remainPart) {
@@ -1019,10 +996,8 @@ class PowerUp {
 
     const glow = 1 + Math.sin(this.pulse) * 0.18;
 
-    // 1. Outer Hexagonal Aura
+    // 1. Outer Hexagonal Aura — removed shadowBlur/ shadowColor (expensive per-powerup blur)
     ctx.strokeStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 12 * glow;
     ctx.lineWidth = 2;
     ctx.fillStyle = "rgba(10, 20, 35, 0.85)";
 
@@ -1039,23 +1014,19 @@ class PowerUp {
     ctx.fill();
     ctx.stroke();
 
-    // 2. Letter to Type
+    // 2. Letter to Type — removed shadowBlur/ shadowColor
     ctx.font = "bold 15px 'Courier New', monospace, sans-serif";
     ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 8;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(this.letter, 0, 1);
 
     ctx.restore();
 
-    // 3. Small label underneath
+    // 3. Small label underneath — removed shadowBlur/ shadowColor
     ctx.save();
     ctx.font = "bold 10px 'Share Tech Mono', monospace, sans-serif";
     ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 4;
     ctx.textAlign = "center";
     ctx.fillText(this.label, this.x, this.y + this.radius + 14);
     ctx.restore();

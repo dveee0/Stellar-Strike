@@ -744,7 +744,7 @@ class GameEngine {
       this.boss.update(effectiveDt, (src) => this.onEnemyShootMissile(src));
     }
 
-    // 7. Missiles update & collision with player
+    // 7. Missiles update & collision with player — hard cap to prevent unbounded growth causing freeze
     for (let i = this.missiles.length - 1; i >= 0; i--) {
       const missile = this.missiles[i];
       missile.update(effectiveDt, this.player);
@@ -766,6 +766,10 @@ class GameEngine {
         this.addFloatingText(this.player.x, this.player.y - 40, "MISSILE IMPACT! -15%", "#ff3300", 16, 1.0);
         this.checkGameOver();
       }
+    }
+    // Hard cap on missiles to prevent freeze from endless enemy fire
+    if (this.missiles.length > 120) {
+      this.missiles.splice(0, this.missiles.length - 120);
     }
 
     // 8. Laser bolts update
@@ -1148,8 +1152,7 @@ class GameEngine {
     ctx.translate(x, y);
     ctx.fillStyle = "#0c2826";
     ctx.strokeStyle = "#00ff88";
-    ctx.shadowColor = "#00ff88";
-    ctx.shadowBlur = 10;
+    // Removed shadowBlur/ shadowColor (expensive per-frame drone glow)
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, 10, 0, Math.PI * 2);
@@ -1304,11 +1307,9 @@ class GameEngine {
     ctx.translate(rp.x, rp.y);
     ctx.rotate(rp.angle + Math.PI / 2);
 
-    // Engine flame
+    // Engine flame — removed shadowBlur/ shadowColor (expensive per-frame blur)
     const flameSize = 12 + Math.sin(Date.now() * 0.03) * 4;
     ctx.fillStyle = "#ff007f";
-    ctx.shadowColor = "#ff007f";
-    ctx.shadowBlur = 8;
     ctx.beginPath();
     ctx.moveTo(-6, 14);
     ctx.lineTo(0, 14 + flameSize);
